@@ -10,8 +10,8 @@
 
 int main(int argc, const char * argv[])
 {
-    economy::world world;
-    world.run_simulation();
+    economy::simulation simulation;
+    simulation.run();
     return 0;
 }
 

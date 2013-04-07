@@ -8,17 +8,10 @@
 
 #include "economy.h"
 
-#include <ctime>
-
-#include <boost/random.hpp>
-
 using namespace economy;
-
-static boost::mt19937          rng;
 
 item_generator::item_generator()
 {
-    rng.seed( (unsigned int) std::time( 0 ) );
 }
 
 int item_generator::get_promotion_probability(const player &p)
@@ -49,7 +42,7 @@ int item_generator::get_promotion_probability(const player &p)
     return 0;
 }
 
-item item_generator::get_new_item(const player &p)
+item item_generator::get_new_item(const player &p, boost::mt19937 &rng)
 {
     boost::uniform_int<>    slot_dist(0,NUM_ITEM_SLOTS-1);
     boost::uniform_int<>    percentage_dist(0,99);

@@ -13,9 +13,9 @@
 
 using namespace economy;
 
-market::market(accounts &acc) :
+market::market(players_vec_t &players_vec) :
 _current_offer_id(0),
-_accounts(acc)
+_players(players_vec)
 {
     for( int i = 0; i < NUM_ITEM_SLOTS; i++ )
     {
@@ -74,7 +74,12 @@ void market::enlist_item(long step, const item &it, int seller_id, currency_t mi
     offer_data_t &od = _offers[it.slot][it.tier];
     od.push_back(o);
     
-    restore_offer_order( od );
+    restore_offer_order(od);
+}
+
+void market::enlist_item(long step, const item& it, int seller_id)
+{
+    enlist_item(step, it, seller_id, get_suggested_minimum_price(it.slot, it.tier));
 }
 
 bool market::find_offer(int slot, int min_tier, currency_t max_price, offer &result)
@@ -96,91 +101,73 @@ bool market::find_offer(int slot, int min_tier, currency_t max_price, offer &res
     return false;
 }
 
-struct find_offer_uid
+void market::validate_bid(const offer &o, int buyer_id, currency_t bid_amount)
 {
-    long ref_uid;
-    
-    find_offer_uid(long ref_uid_p) :
-    ref_uid(ref_uid_p)
+    if( bid_amount < o.minimum_bid() )
     {
+        throw bid_amount_too_low_exception();
     }
-    
-    bool operator()(const offer &o)
+    if( bid_amount > _players[buyer_id].account )
     {
-        return o.uid == ref_uid;
+        throw insufficient_funds_exception();
     }
-};
+}
 
-bool market::bid(const offer &off, int buyer_id, currency_t bid_amount)
+offer& market::find_offer(const offer &off)
 {
+    auto pred = [&] (const offer &o) {return o.uid == off.uid;};
     offer_data_t &od = _offers[off.it.slot][off.it.tier];
-    find_offer_uid pred(off.uid);
     auto iter = std::find_if( od.rbegin(), od.rend(), pred);
     if( iter == od.rend() )
     {
-        return false;
+        throw offer_not_found_exception();
     }
-    offer &o = *iter;
-    if( bid_amount < o.minimum_bid() )
-    {
-        return false;
-    }
-    if( bid_amount > _accounts.get_account(buyer_id) )
-    {
-        return false;
-    }
+    return *iter;
+}
+
+void market::bid(const offer &off, int buyer_id, currency_t bid_amount)
+{
+    offer &o = find_offer(off);
+    validate_bid(o, buyer_id, bid_amount);
     if( o.has_buyer )
     {
-        _accounts.add_to_account(o.buyer_id, o.current_bid);
+        _players[o.buyer_id].account += o.current_bid;
     }
     o.has_buyer = true;
     o.buyer_id = buyer_id;
     o.current_bid = bid_amount;
-    _accounts.remove_from_account(buyer_id, bid_amount);
-    if( iter == od.rbegin() )
+    _players[buyer_id].account -= bid_amount;
+
+    offer_data_t &od = _offers[o.it.slot][o.it.tier];
+    if( o.uid == od.rbegin()->uid )
     {
-        restore_offer_order( od );
+        restore_offer_order(od);
     }
     else
     {
-        std::sort(od.begin(), od.end(), compare_offers_rev() );
+        std::sort(od.begin(), od.end(), compare_offers_rev());
     }
-    return true;
 }
 
-currency_t market::get_suggested_min_price(int slot, int tier)
+currency_t market::get_suggested_minimum_price(int slot, int tier)
 {
     offer_data_t &od = _offers[slot][tier];
-    return std::max( od.empty() ? _last_prices[slot][tier] / 2 : ( od.rbegin()->price() / 2 ),
-                    MIN_ENLIST_PRICE );
+    return std::max(od.empty() ? _last_prices[slot][tier] / 2 : ( od.rbegin()->price() / 2 ),
+                    MIN_ENLIST_PRICE);
 }
-
-struct offer_age_predicate
-{
-    long current_step;
-    
-    bool operator()(const offer &o)
-    {
-        return o.create_step + MAX_TRANSACTION_AGE < current_step;
-    }
-};
 
 void market::remove_old_transactions(long step, offer_data_t &od, std::vector<offer> &result)
 {
-    offer_age_predicate pred;
-    pred.current_step = step;
-    auto iter = od.begin();
-    while( iter != od.end() )
+    auto pred = [&] (const offer &o) {return o.create_step + MAX_TRANSACTION_AGE < step;};
+    for( const auto &o : od )
     {
-        const offer &o = *iter;
-        if( pred( o ) )
+        if( pred(o) )
         {
-            result.push_back( o );
+            result.push_back(o);
             _last_prices[o.it.slot][o.it.tier] = o.has_buyer ? o.current_bid : o.min_price;
         }
-        iter++;
     }
-    od.erase( std::remove_if(od.begin(), od.end(), pred), od.end() );
+    od.erase(std::remove_if(od.begin(), od.end(), pred), od.end());
 }
 
 void market::remove_old_transactions(long step, std::vector<offer> &result)
@@ -194,23 +181,20 @@ void market::remove_old_transactions(long step, std::vector<offer> &result)
     }
 }
 
-currency_t market::get_avg_tier_price(int tier)
+currency_t market::get_average_tier_price(int tier)
 {
     int item_count = 0;
     currency_t sum = 0;
     for( int i = 0; i < NUM_ITEM_SLOTS; i++ )
     {
         const offer_data_t &od = _offers[i][tier];
-        auto iter = od.begin();
-        while( iter != od.end() )
+        for( const auto &o : od )
         {
-            const offer &o = *iter;
             if( o.has_buyer )
             {
                 sum += o.current_bid;
                 item_count++;
             }
-            iter++;
         }
     }
     if( item_count )

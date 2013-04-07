@@ -12,14 +12,11 @@ using namespace economy;
 
 accounts::accounts()
 {
-    _accounts = new currency_t[MAX_PLAYERS];
-    memset( _accounts, 0, MAX_PLAYERS * sizeof(currency_t) );
+    _accounts.resize(MAX_PLAYERS,0);
 }
 
 accounts::~accounts()
 {
-    delete [] _accounts;
-    _accounts = NULL;
 }
 
 currency_t accounts::get_account(int player_id)

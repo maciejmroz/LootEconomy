@@ -10,7 +10,9 @@
 #define LootEconomy_economy_h
 
 #include <boost/utility.hpp>
+#include <boost/random.hpp>
 #include <vector>
+#include <array>
 
 namespace economy
 {
@@ -33,6 +35,8 @@ namespace economy
 
     const int NUM_SIMULATION_CYCLES = 365;
     
+    class simulation;
+
     struct item
     {
         int             tier;   //-1 marks empty item
@@ -45,18 +49,42 @@ namespace economy
         bool            is_empty() const;
         void            clear();
     };
-    
-    struct player : public boost::noncopyable
+
+    class player
     {
+        void            generate_items(simulation &sim);
+        void            use_best_items(simulation &sim);
+        void            destroy_bad_items();
+        void            enlist_stash_items(int player_id, simulation &sim);
+        void            find_upgrades(int player_id, simulation &sim);
+    public:
         typedef std::vector<item>       stash_t;
         
-        item            used_items[NUM_ITEM_SLOTS];
+        std::array<item,NUM_ITEM_SLOTS> used_items;
         stash_t         stash;
         long            last_upgrade;
+        currency_t      account;
 
         player();
-        double           get_average_tier() const;
+        player(const player &p);
+        void operator=(const player &p);
+
+        double          get_average_tier() const;
+        void            process_simulation_step(simulation &sim, int player_id);
     };
+
+    class item_generator
+    {
+        //return promotion probability to next tier expressed in percent
+        //based on average tier of items used
+        int             get_promotion_probability(const player &p);
+    public:
+        item_generator();
+        
+        item            get_new_item(const player &p, boost::mt19937 &rng);
+    };
+
+    typedef std::vector<player>         players_vec_t;
     
     struct offer
     {
@@ -81,101 +109,81 @@ namespace economy
         }
     };
     
-    class item_generator
-    {
-        //return promotion probability to next tier expressed in percent
-        //based on average tier of items used
-        int             get_promotion_probability(const player &p);
-    public:
-        item_generator();
-        
-        item            get_new_item(const player &p);
-    };
-    
-    class accounts : public boost::noncopyable
-    {
-        currency_t      *_accounts;
-    public:
-        accounts();
-        ~accounts();
-        
-        currency_t      get_account(int player_id);
-        void            add_to_account(int player_id, currency_t amount);
-        void            remove_from_account(int player_id, currency_t amount);
-    };
+    struct offer_not_found_exception : std::exception {};
+    struct bid_amount_too_low_exception : std::exception {};
+    struct insufficient_funds_exception : std::exception {};
     
     class market : public boost::noncopyable
     {
         typedef std::vector<offer>          offer_data_t;
         
-        accounts        &_accounts;
+        players_vec_t   &_players;
         long            _current_offer_id;
         offer_data_t    _offers[NUM_ITEM_SLOTS][NUM_ITEM_TIERS];
         currency_t      _last_prices[NUM_ITEM_SLOTS][NUM_ITEM_TIERS];
 
+        void            validate_bid(const offer &o, int buyer_id, currency_t bid_amount);
+        offer&          find_offer(const offer &off);
         //call when only last element is not in sorted order (most typical case)
         void            restore_offer_order(offer_data_t &od);
         void            remove_old_transactions(long step, offer_data_t &od,
                                                 offer_data_t &result);
+        void            enlist_item(long step, const item& it, int seller_id, currency_t min_price);
+        currency_t      get_suggested_minimum_price(int slot, int tier);
     public:
-        market(accounts &acc);
+        market(players_vec_t &players_vec);
         ~market();
         
-        void            enlist_item(long step, const item& it, int seller_id, currency_t min_price);
+        void            enlist_item(long step, const item& it, int seller_id);
         bool            find_offer(int slot, int min_tier, currency_t max_price, offer &result);
-        bool            bid(const offer &off, int buyer_id, currency_t bid_amount);
-        currency_t      get_suggested_min_price(int slot, int tier);
+        void            bid(const offer &off, int buyer_id, currency_t bid_amount);
         void            remove_old_transactions(long step, std::vector<offer> &result);
-        currency_t      get_avg_tier_price(int tier);
+        currency_t      get_average_tier_price(int tier);
     };
     
-    struct cycle_statistics
+    struct tier_cycle_statistics
     {
-        int             successful_transactions[NUM_ITEM_TIERS];
-        int             failed_transactions[NUM_ITEM_TIERS];
-        currency_t      transaction_volume[NUM_ITEM_TIERS];
-        currency_t      tax[NUM_ITEM_TIERS];
+        int             successful_transactions;
+        int             failed_transactions;
+        currency_t      transaction_volume;
+        currency_t      tax;
         
         void clear()
         {
-            for( int i = 0; i < NUM_ITEM_TIERS; i++ )
-            {
-                successful_transactions[i] = 0;
-                failed_transactions[i] = 0;
-                transaction_volume[i] = 0;
-                tax[i] = 0;
-            }
+            successful_transactions = 0;
+            failed_transactions = 0;
+            transaction_volume = 0;
+            tax = 0;
         }
     };
 
-    class world : public boost::noncopyable
+    class simulation : public boost::noncopyable
     {
-        player              *_players;
-        item_generator      _generator;
-        accounts            _accounts;
-        market              _market;
-        long                _step;
-        long                _cycle;
-        cycle_statistics    _cycle_stats;
-        
-        void            generate_items(player &p);
-        void            use_best_items(player &p);
-        void            destroy_bad_items(int player_id);
-        void            enlist_stash_items(int player_id);
-        void            find_upgrades(int player_id);
-        void            process_player(int player_id);
-        void            process_all();
+        long            _step;
+        long            _cycle;
+
+        void            process_simulation_cycle();
         void            finalize_transactions(const std::vector<offer> &transactions);
         
-        int             get_cycle_upgrade_count();
-        double          get_avg_item_tier();
+        double          get_average_item_tier();
         void            begin_reporting();
         void            report_cycle_results();
     public:
-        world();
-        ~world();
-        
-        void            run_simulation();
+        typedef std::array<tier_cycle_statistics,NUM_ITEM_TIERS> cycle_stats_t;
+
+        boost::mt19937      _rng;
+        players_vec_t       _players;
+        item_generator      _generator;
+        market              _market;
+        cycle_stats_t       _cycle_stats;
+
+        simulation();
+        ~simulation();
+
+        long            get_step() {return _step;}
+        long            get_cycle() {return _cycle;}
+
+        void            run();
     };
 }
 
