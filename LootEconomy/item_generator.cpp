@@ -36,7 +36,7 @@ int item_generator::get_promotion_probability(const player &p)
         {0.0f,10},
     };
     const int avg_tbl_size = sizeof(avg_tbl) / sizeof(avg_tbl_s);
-    const float avg_tier = p.get_average_tier();
+    const double avg_tier = p.get_average_tier();
     
     for ( int i = 0; i < avg_tbl_size; i++ )
     {

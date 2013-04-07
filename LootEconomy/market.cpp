@@ -61,7 +61,7 @@ void market::restore_offer_order(offer_data_t &od)
     *(iter-1) = tmp_o;
 }
 
-void market::enlist_item(long step, const item &it, int seller_id, long min_price)
+void market::enlist_item(long step, const item &it, int seller_id, currency_t min_price)
 {
     offer o;
     o.min_price = min_price;
@@ -77,7 +77,7 @@ void market::enlist_item(long step, const item &it, int seller_id, long min_pric
     restore_offer_order( od );
 }
 
-bool market::find_offer(int slot, int min_tier, long max_price, offer &result)
+bool market::find_offer(int slot, int min_tier, currency_t max_price, offer &result)
 {
     for( int i = NUM_ITEM_TIERS - 1; i >= min_tier; i-- )
     {
@@ -111,7 +111,7 @@ struct find_offer_uid
     }
 };
 
-bool market::bid(const offer &off, int buyer_id, long bid_amount)
+bool market::bid(const offer &off, int buyer_id, currency_t bid_amount)
 {
     offer_data_t &od = _offers[off.it.slot][off.it.tier];
     find_offer_uid pred(off.uid);

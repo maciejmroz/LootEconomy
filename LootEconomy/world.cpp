@@ -79,7 +79,7 @@ void world::destroy_bad_items(int player_id)
     {
         return;
     }
-    _accounts.add_to_account(player_id, ( p.stash.size() - MAX_ITEMS_TO_ENLIST ) * VENDOR_PRICE );
+	_accounts.add_to_account(player_id, (currency_t)( p.stash.size() - MAX_ITEMS_TO_ENLIST ) * VENDOR_PRICE );
     p.stash.erase( p.stash.begin() + MAX_ITEMS_TO_ENLIST, p.stash.end() );
 }
 

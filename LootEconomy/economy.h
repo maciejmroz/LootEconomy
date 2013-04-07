@@ -14,13 +14,13 @@
 
 namespace economy
 {
-    typedef long            currency_t;     //long is not always 64-bit, take care when porting
+    typedef long long            currency_t;
     
     const int NUM_ITEM_TIERS = 10;
     const int NUM_ITEM_SLOTS = 10;
     const int MAX_PLAYERS = 10000;
     
-    const int TRANSACTION_FREQUENCY = 1000;  //performance optimization
+    const int TRANSACTION_FREQUENCY = 1000;     //performance optimization, doing it on every cycle would take forever
     const int MAX_TRANSACTION_AGE = 15000;
     const double MIN_BID_STEP = 1.05;
     const currency_t VENDOR_PRICE = 100;
@@ -35,8 +35,7 @@ namespace economy
     
     struct item
     {
-        //tier numbering is 1-based, 0 means 'empty'
-        int             tier;
+        int             tier;   //-1 marks empty item
         int             slot;
 
         item()
@@ -78,7 +77,7 @@ namespace economy
         
         currency_t minimum_bid() const
         {
-            return has_buyer ? MIN_BID_STEP * current_bid : min_price;
+            return has_buyer ? (currency_t)(MIN_BID_STEP * current_bid) : min_price;
         }
     };
     
