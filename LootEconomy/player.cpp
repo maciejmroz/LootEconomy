@@ -43,11 +43,11 @@ void player::generate_items(simulation &sim)
 {
     boost::uniform_int<>    it_gen_count_dist(NUM_ITEMS_PER_STEP_MIN,NUM_ITEMS_PER_STEP_MAX);
     
-    const int num_items_to_generate = it_gen_count_dist(sim._rng);
+    const int num_items_to_generate = it_gen_count_dist(sim.rng);
     
     for( int i = 0; i < num_items_to_generate; i++ )
     {
-        stash.push_back(sim._generator.get_new_item(*this, sim._rng));
+        stash.push_back(sim.generator.get_new_item(*this, sim.rng));
     }
 }
 
@@ -55,15 +55,14 @@ void player::use_best_items(simulation &sim)
 {
     for( item &it : stash )
     {
-        item it_copy = it;
         if( used_items[it.slot].tier < it.tier )
         {
-            it = used_items[it.slot];
-            used_items[it.slot] = it_copy;
+            std::swap(it, used_items[it.slot]); 
             last_upgrade = sim.get_cycle();
         }
     }
-    stash.erase(std::remove_if(stash.begin(), stash.end(), [] (const item &it) {return it.is_empty();}), stash.end());
+    stash.erase(std::remove_if(stash.begin(), stash.end(),
+        [] (const item &it) {return it.is_empty();}), stash.end());
 }
 
 void player::destroy_bad_items()
@@ -82,7 +81,7 @@ void player::enlist_stash_items(int player_id, simulation &sim)
 {
     for( auto &item : stash )
     {
-        sim._market.enlist_item(sim.get_step(), item, player_id);
+        sim.market.enlist_item(sim.get_step(), item, player_id);
     }
     stash.clear();
 }
@@ -119,9 +118,9 @@ void player::find_upgrades(int player_id, simulation &sim)
                 return;
             }
             offer o;
-            if( sim._market.find_offer(worst_item_index, used_items[worst_item_index].tier + 1, account, o) )
+            if( sim.market.find_offer(worst_item_index, used_items[worst_item_index].tier + 1, account, o) )
             {
-                sim._market.bid(o, player_id, o.minimum_bid() );
+                sim.market.bid(o, player_id, o.minimum_bid() );
             }
             processed_slots[worst_item_index] = true;
         }

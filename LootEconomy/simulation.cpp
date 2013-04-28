@@ -15,39 +15,16 @@
 using namespace economy;
 
 simulation::simulation() :
-_market(_players),
+market(players),
 _step(0),
 _cycle(0)
 {
-    _players.resize(MAX_PLAYERS);
-    _rng.seed((unsigned int)std::time(0));
+    players.resize(MAX_PLAYERS);
+    rng.seed((unsigned int)std::time(0));
 }
 
 simulation::~simulation()
 {
-}
-
-void simulation::finalize_transactions(const std::vector<offer> &transactions)
-{
-    for( const offer &o : transactions )
-    {
-        if( o.has_buyer )
-        {
-            _players[o.buyer_id].stash.push_back(o.it);
-            currency_t tax = TRANSACTION_TAX * o.current_bid /  100;
-            _players[o.seller_id].account += o.current_bid - tax;
-            
-            _cycle_stats[o.it.tier].successful_transactions++;
-            _cycle_stats[o.it.tier].transaction_volume += o.current_bid;
-            _cycle_stats[o.it.tier].tax += tax;
-        }
-        else
-        {
-            _players[o.seller_id].stash.push_back(o.it);
-            
-            _cycle_stats[o.it.tier].failed_transactions++;
-        }
-    }
 }
 
 void simulation::process_simulation_cycle()
@@ -55,12 +32,10 @@ void simulation::process_simulation_cycle()
     for( int i = 0; i < MAX_PLAYERS ; i++ )
     {
         _step++;
-        _players[i].process_simulation_step(*this, i);
+        players[i].process_simulation_step(*this, i);
         if( _step % TRANSACTION_FREQUENCY == 0)
         {
-            std::vector<offer> transactions;
-            _market.remove_old_transactions(_step, transactions);
-            finalize_transactions(transactions);
+            market.finalize_old_transactions(*this);
         }
     }
 }
@@ -68,11 +43,11 @@ void simulation::process_simulation_cycle()
 double simulation::get_average_item_tier()
 {
     double sum = 0.0;
-    for( const player &p : _players)
+    for( const player &p : players)
     {
         sum += p.get_average_tier();
     }
-    return sum / _players.size();
+    return sum / players.size();
 }
 
 void simulation::begin_reporting()
@@ -96,17 +71,17 @@ void simulation::report_cycle_results()
 {
     for( int i = 0; i < NUM_ITEM_TIERS; i++ )
     {
-        std::cout << _cycle_stats[i].successful_transactions << ";";
+        std::cout << cycle_stats[i].successful_transactions << ";";
     }
     for( int i = 0; i < NUM_ITEM_TIERS; i++ )
     {
-        std::cout << _cycle_stats[i].transaction_volume << ";";
+        std::cout << cycle_stats[i].transaction_volume << ";";
     }
     for( int i = 0; i < NUM_ITEM_TIERS; i++ )
     {
-        std::cout << _market.get_average_tier_price(i) << ";";
+        std::cout << market.get_average_tier_price(i) << ";";
     }
-    std::cout << std::count_if(_players.begin(),_players.end(),[&] (const player& p) {return p.last_upgrade == _cycle;}) << ";";
+    std::cout << std::count_if(players.begin(),players.end(),[&] (const player& p) {return p.last_upgrade == _cycle;}) << ";";
     std::cout << get_average_item_tier() << std::endl;
 }
 
@@ -116,7 +91,7 @@ void simulation::run()
     begin_reporting();
     for( _cycle = 0; _cycle < NUM_SIMULATION_CYCLES ; _cycle++ )
     {
-        for( tier_cycle_statistics &tcs : _cycle_stats)
+        for( tier_cycle_statistics &tcs : cycle_stats)
         {
             tcs.clear();
         }

@@ -126,10 +126,11 @@ namespace economy
         offer&          find_offer(const offer &off);
         //call when only last element is not in sorted order (most typical case)
         void            restore_offer_order(offer_data_t &od);
-        void            remove_old_transactions(long step, offer_data_t &od,
-                                                offer_data_t &result);
         void            enlist_item(long step, const item& it, int seller_id, currency_t min_price);
         currency_t      get_suggested_minimum_price(int slot, int tier);
+        void            remove_old_transactions(long step, offer_data_t &od,
+                                                offer_data_t &result);
+        void            remove_old_transactions(long step, std::vector<offer> &result);
     public:
         market(players_vec_t &players_vec);
         ~market();
@@ -137,7 +138,7 @@ namespace economy
         void            enlist_item(long step, const item& it, int seller_id);
         bool            find_offer(int slot, int min_tier, currency_t max_price, offer &result);
         void            bid(const offer &off, int buyer_id, currency_t bid_amount);
-        void            remove_old_transactions(long step, std::vector<offer> &result);
+        void            finalize_old_transactions(simulation &sim);
         currency_t      get_average_tier_price(int tier);
     };
     
@@ -163,7 +164,6 @@ namespace economy
         long            _cycle;
 
         void            process_simulation_cycle();
-        void            finalize_transactions(const std::vector<offer> &transactions);
         
         double          get_average_item_tier();
         void            begin_reporting();
@@ -171,11 +171,11 @@ namespace economy
     public:
         typedef std::array<tier_cycle_statistics,NUM_ITEM_TIERS> cycle_stats_t;
 
-        boost::mt19937      _rng;
-        players_vec_t       _players;
-        item_generator      _generator;
-        market              _market;
-        cycle_stats_t       _cycle_stats;
+        boost::mt19937      rng;
+        players_vec_t       players;
+        item_generator      generator;
+        market              market;
+        cycle_stats_t       cycle_stats;
 
         simulation();
         ~simulation();

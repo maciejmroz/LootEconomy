@@ -30,14 +30,6 @@ market::~market()
 {
 }
 
-struct compare_offers_rev
-{
-    bool operator()(const offer &o1, const offer &o2)
-    {
-        return o1.price() > o2.price();
-    }
-};
-
 void market::restore_offer_order(offer_data_t &od)
 {
     if( od.size() < 2 )
@@ -115,9 +107,8 @@ void market::validate_bid(const offer &o, int buyer_id, currency_t bid_amount)
 
 offer& market::find_offer(const offer &off)
 {
-    auto pred = [&] (const offer &o) {return o.uid == off.uid;};
     offer_data_t &od = _offers[off.it.slot][off.it.tier];
-    auto iter = std::find_if( od.rbegin(), od.rend(), pred);
+    auto iter = std::find_if( od.rbegin(), od.rend(), [&] (const offer &o) {return o.uid == off.uid;});
     if( iter == od.rend() )
     {
         throw offer_not_found_exception();
@@ -145,7 +136,7 @@ void market::bid(const offer &off, int buyer_id, currency_t bid_amount)
     }
     else
     {
-        std::sort(od.begin(), od.end(), compare_offers_rev());
+        std::sort(od.begin(), od.end(), [] (const offer &o1, const offer &o2) {return o1.price() > o2.price();});
     }
 }
 
@@ -179,6 +170,32 @@ void market::remove_old_transactions(long step, std::vector<offer> &result)
             remove_old_transactions( step, _offers[slot][tier], result );
         }
     }
+}
+
+void market::finalize_old_transactions(simulation &sim)
+{
+    std::vector<offer> transactions;
+    remove_old_transactions(sim.get_step(), transactions);
+
+    for( const offer &o : transactions )
+    {
+        if( o.has_buyer )
+        {
+            sim.players[o.buyer_id].stash.push_back(o.it);
+            currency_t tax = TRANSACTION_TAX * o.current_bid /  100;
+            sim.players[o.seller_id].account += o.current_bid - tax;
+            
+            sim.cycle_stats[o.it.tier].successful_transactions++;
+            sim.cycle_stats[o.it.tier].transaction_volume += o.current_bid;
+            sim.cycle_stats[o.it.tier].tax += tax;
+        }
+        else
+        {
+            sim.players[o.seller_id].stash.push_back(o.it);
+            sim.cycle_stats[o.it.tier].failed_transactions++;
+        }
+    }
+
 }
 
 currency_t market::get_average_tier_price(int tier)
