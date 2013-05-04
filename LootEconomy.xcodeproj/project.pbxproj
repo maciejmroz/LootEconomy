@@ -9,6 +9,11 @@
 /* Begin PBXBuildFile section */
 		540BA94216848642006BE60E /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 540BA94116848642006BE60E /* main.cpp */; };
 		540BA94416848642006BE60E /* LootEconomy.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 540BA94316848642006BE60E /* LootEconomy.1 */; };
+		540BA94D1685CB98006BE60E /* item.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 540BA94B1685CB98006BE60E /* item.cpp */; };
+		540BA9501685DC39006BE60E /* item_generator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 540BA94E1685DC39006BE60E /* item_generator.cpp */; };
+		540BA9531685E664006BE60E /* player.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 540BA9511685E664006BE60E /* player.cpp */; };
+		540BA9561685EEBF006BE60E /* market.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 540BA9541685EEBF006BE60E /* market.cpp */; };
+		541EA5731735011C005C5D71 /* simulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 541EA5721735011C005C5D71 /* simulation.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +33,12 @@
 		540BA93D16848642006BE60E /* LootEconomy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LootEconomy; sourceTree = BUILT_PRODUCTS_DIR; };
 		540BA94116848642006BE60E /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		540BA94316848642006BE60E /* LootEconomy.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = LootEconomy.1; sourceTree = "<group>"; };
+		540BA94A1684866E006BE60E /* economy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = economy.h; sourceTree = "<group>"; };
+		540BA94B1685CB98006BE60E /* item.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = item.cpp; sourceTree = "<group>"; };
+		540BA94E1685DC39006BE60E /* item_generator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = item_generator.cpp; sourceTree = "<group>"; };
+		540BA9511685E664006BE60E /* player.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = player.cpp; sourceTree = "<group>"; };
+		540BA9541685EEBF006BE60E /* market.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = market.cpp; sourceTree = "<group>"; };
+		541EA5721735011C005C5D71 /* simulation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = simulation.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +73,12 @@
 			children = (
 				540BA94116848642006BE60E /* main.cpp */,
 				540BA94316848642006BE60E /* LootEconomy.1 */,
+				540BA94A1684866E006BE60E /* economy.h */,
+				540BA94B1685CB98006BE60E /* item.cpp */,
+				540BA94E1685DC39006BE60E /* item_generator.cpp */,
+				540BA9511685E664006BE60E /* player.cpp */,
+				540BA9541685EEBF006BE60E /* market.cpp */,
+				541EA5721735011C005C5D71 /* simulation.cpp */,
 			);
 			path = LootEconomy;
 			sourceTree = "<group>";
@@ -118,6 +135,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				540BA94216848642006BE60E /* main.cpp in Sources */,
+				540BA94D1685CB98006BE60E /* item.cpp in Sources */,
+				540BA9501685DC39006BE60E /* item_generator.cpp in Sources */,
+				540BA9531685E664006BE60E /* player.cpp in Sources */,
+				540BA9561685EEBF006BE60E /* market.cpp in Sources */,
+				541EA5731735011C005C5D71 /* simulation.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +169,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -170,6 +193,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
 			};
@@ -185,6 +209,7 @@
 		540BA94916848642006BE60E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -208,6 +233,7 @@
 				540BA94916848642006BE60E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
