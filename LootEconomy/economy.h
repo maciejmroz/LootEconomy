@@ -17,38 +17,51 @@
 namespace economy
 {
     typedef long long            currency_t;
-    
-    const int NUM_ITEM_TIERS = 10;
-    const int NUM_ITEM_SLOTS = 10;
-    const int MAX_PLAYERS = 10000;
-    
-    const int TRANSACTION_FREQUENCY = 1000;     //performance optimization, doing it on every cycle would take forever
-    const int MAX_TRANSACTION_AGE = 15000;
-    const double MIN_BID_STEP = 1.05;
-    const currency_t VENDOR_PRICE = 100;
-    const currency_t MIN_ENLIST_PRICE = 120;
-    const int TRANSACTION_TAX = 15;
-    
-    const int NUM_ITEMS_PER_STEP_MIN = 25;
-    const int NUM_ITEMS_PER_STEP_MAX = 75;
-    const int MAX_ITEMS_TO_ENLIST = 10;
 
-    const int NUM_SIMULATION_CYCLES = 365;
+    namespace config
+    {
+        const int NUM_ITEM_TIERS = 10;
+        const int NUM_ITEM_SLOTS = 10;
+        const int MAX_PLAYERS = 10000;
     
-    class simulation;
+        const int TRANSACTION_FREQUENCY = 1000;     //performance optimization, doing it on every cycle would take forever
+        const int MAX_TRANSACTION_AGE = 15000;
+        const double MIN_BID_STEP = 1.05;
+        const currency_t VENDOR_PRICE = 100;
+        const currency_t MIN_ENLIST_PRICE = 120;
+        const int TRANSACTION_TAX = 15;
+    
+        const int NUM_ITEMS_PER_STEP_MIN = 25;
+        const int NUM_ITEMS_PER_STEP_MAX = 75;
+        const int MAX_ITEMS_TO_ENLIST = 10;
 
-    struct item
+        const int NUM_SIMULATION_CYCLES = 365;
+    }
+    
+    struct discrete_quality_item
     {
         int             tier;   //-1 marks empty item
         int             slot;
 
-        item()
-        {
-            clear();
-        }
+        discrete_quality_item();
         bool            is_empty() const;
         void            clear();
+        void            generate(boost::mt19937 &rng);
     };
+
+    struct continuous_quality_item
+    {
+        double          tier;   //<0.0 marks empty item
+        int             slot;
+
+        continuous_quality_item();
+        bool            is_empty() const;
+        void            clear();
+        void            generate(boost::mt19937 &rng);
+    };
+
+    typedef discrete_quality_item   item;
+    class simulation;
 
     class player
     {
@@ -60,7 +73,7 @@ namespace economy
     public:
         typedef std::vector<item>       stash_t;
         
-        std::array<item,NUM_ITEM_SLOTS> used_items;
+        std::array<item,config::NUM_ITEM_SLOTS> used_items;
         stash_t         stash;
         long            last_upgrade;
         currency_t      account;
@@ -71,17 +84,6 @@ namespace economy
 
         double          get_average_tier() const;
         void            process_simulation_step(simulation &sim, int player_id);
-    };
-
-    class item_generator
-    {
-        //return promotion probability to next tier expressed in percent
-        //based on average tier of items used
-        int             get_promotion_probability(const player &p);
-    public:
-        item_generator();
-        
-        item            get_new_item(const player &p, boost::mt19937 &rng);
     };
 
     typedef std::vector<player>         players_vec_t;
@@ -105,7 +107,7 @@ namespace economy
         
         currency_t minimum_bid() const
         {
-            return has_buyer ? (currency_t)(MIN_BID_STEP * current_bid) : min_price;
+            return has_buyer ? (currency_t)(config::MIN_BID_STEP * current_bid) : min_price;
         }
     };
     
@@ -117,10 +119,10 @@ namespace economy
     {
         typedef std::vector<offer>          offer_data_t;
         
-        players_vec_t   &_players;
-        long            _current_offer_id;
-        offer_data_t    _offers[NUM_ITEM_SLOTS][NUM_ITEM_TIERS];
-        currency_t      _last_prices[NUM_ITEM_SLOTS][NUM_ITEM_TIERS];
+        players_vec_t   &players;
+        long            current_offer_id;
+        offer_data_t    offers[config::NUM_ITEM_SLOTS][config::NUM_ITEM_TIERS];
+        currency_t      last_prices[config::NUM_ITEM_SLOTS][config::NUM_ITEM_TIERS];
 
         void            validate_bid(const offer &o, int buyer_id, currency_t bid_amount);
         offer&          find_offer(const offer &off);
@@ -169,11 +171,10 @@ namespace economy
         void            begin_reporting();
         void            report_cycle_results();
     public:
-        typedef std::array<tier_cycle_statistics,NUM_ITEM_TIERS> cycle_stats_t;
+        typedef std::array<tier_cycle_statistics,config::NUM_ITEM_TIERS> cycle_stats_t;
 
         boost::mt19937      rng;
         players_vec_t       players;
-        item_generator      generator;
         market              market;
         cycle_stats_t       cycle_stats;
 

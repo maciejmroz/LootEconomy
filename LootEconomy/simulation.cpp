@@ -19,7 +19,7 @@ market(players),
 _step(0),
 _cycle(0)
 {
-    players.resize(MAX_PLAYERS);
+    players.resize(config::MAX_PLAYERS);
     rng.seed((unsigned int)std::time(0));
 }
 
@@ -29,11 +29,11 @@ simulation::~simulation()
 
 void simulation::process_simulation_cycle()
 {
-    for( int i = 0; i < MAX_PLAYERS ; i++ )
+    for( int i = 0; i < config::MAX_PLAYERS ; i++ )
     {
         _step++;
         players[i].process_simulation_step(*this, i);
-        if( _step % TRANSACTION_FREQUENCY == 0)
+        if( _step % config::TRANSACTION_FREQUENCY == 0)
         {
             market.finalize_old_transactions(*this);
         }
@@ -52,15 +52,15 @@ double simulation::get_average_item_tier()
 
 void simulation::begin_reporting()
 {
-    for(int i = 0; i < NUM_ITEM_TIERS; i++ )
+    for(int i = 0; i < config::NUM_ITEM_TIERS; i++ )
     {
         std::cout << "\"TR_COUNT_T" << i <<"\";";
     }
-    for(int i = 0; i < NUM_ITEM_TIERS; i++ )
+    for(int i = 0; i < config::NUM_ITEM_TIERS; i++ )
     {
         std::cout << "\"TR_VOL_T" << i <<"\";";
     }
-    for(int i = 0; i < NUM_ITEM_TIERS; i++ )
+    for(int i = 0; i < config::NUM_ITEM_TIERS; i++ )
     {
         std::cout << "\"AVG_PRICE_T" << i <<"\";";
     }
@@ -69,15 +69,15 @@ void simulation::begin_reporting()
 
 void simulation::report_cycle_results()
 {
-    for( int i = 0; i < NUM_ITEM_TIERS; i++ )
+    for( int i = 0; i < config::NUM_ITEM_TIERS; i++ )
     {
         std::cout << cycle_stats[i].successful_transactions << ";";
     }
-    for( int i = 0; i < NUM_ITEM_TIERS; i++ )
+    for( int i = 0; i < config::NUM_ITEM_TIERS; i++ )
     {
         std::cout << cycle_stats[i].transaction_volume << ";";
     }
-    for( int i = 0; i < NUM_ITEM_TIERS; i++ )
+    for( int i = 0; i < config::NUM_ITEM_TIERS; i++ )
     {
         std::cout << market.get_average_tier_price(i) << ";";
     }
@@ -89,7 +89,7 @@ void simulation::run()
 {
     _step = 0;
     begin_reporting();
-    for( _cycle = 0; _cycle < NUM_SIMULATION_CYCLES ; _cycle++ )
+    for( _cycle = 0; _cycle < config::NUM_SIMULATION_CYCLES ; _cycle++ )
     {
         for( tier_cycle_statistics &tcs : cycle_stats)
         {

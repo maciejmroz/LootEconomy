@@ -32,22 +32,24 @@ void player::operator=(const player &p)
 double player::get_average_tier() const
 {
     double ret = 0.0;
-    for ( int i = 0; i < NUM_ITEM_SLOTS; i++ )
+    for ( int i = 0; i < config::NUM_ITEM_SLOTS; i++ )
     {
         ret += used_items[i].is_empty() ? 0 : used_items[i].tier;
     }
-    return ret / NUM_ITEM_SLOTS;
+    return ret / config::NUM_ITEM_SLOTS;
 }
 
 void player::generate_items(simulation &sim)
 {
-    boost::uniform_int<>    it_gen_count_dist(NUM_ITEMS_PER_STEP_MIN,NUM_ITEMS_PER_STEP_MAX);
+    boost::uniform_int<>    it_gen_count_dist(config::NUM_ITEMS_PER_STEP_MIN,config::NUM_ITEMS_PER_STEP_MAX);
     
     const int num_items_to_generate = it_gen_count_dist(sim.rng);
     
     for( int i = 0; i < num_items_to_generate; i++ )
     {
-        stash.push_back(sim.generator.get_new_item(*this, sim.rng));
+        item it;
+        it.generate(sim.rng);
+        stash.push_back(it);
     }
 }
 
@@ -69,12 +71,12 @@ void player::destroy_bad_items()
 {
     std::sort( stash.begin(), stash.end(),
         [] (const item &i1, const item &i2) {return i1.tier > i2.tier;});
-    if( stash.size() <= MAX_ITEMS_TO_ENLIST )
+    if( stash.size() <= config::MAX_ITEMS_TO_ENLIST )
     {
         return;
     }
-	account += (currency_t)(stash.size() - MAX_ITEMS_TO_ENLIST) * VENDOR_PRICE;
-    stash.erase(stash.begin() + MAX_ITEMS_TO_ENLIST, stash.end());
+	account += (currency_t)(stash.size() - config::MAX_ITEMS_TO_ENLIST) * config::VENDOR_PRICE;
+    stash.erase(stash.begin() + config::MAX_ITEMS_TO_ENLIST, stash.end());
 }
 
 void player::enlist_stash_items(int player_id, simulation &sim)
@@ -88,41 +90,41 @@ void player::enlist_stash_items(int player_id, simulation &sim)
 
 void player::find_upgrades(int player_id, simulation &sim)
 {
-    bool processed_slots[NUM_ITEM_SLOTS];
+    bool processed_slots[config::NUM_ITEM_SLOTS];
     
-    for( int i = 0; i < NUM_ITEM_SLOTS; i++ )
+    for( int i = 0; i < config::NUM_ITEM_SLOTS; i++ )
     {
         processed_slots[i] = false;
     }
     
-    for(int i = 0; i < NUM_ITEM_SLOTS ; i++ )
+    for(int i = 0; i < config::NUM_ITEM_SLOTS ; i++ )
     {
-        int worst_item_index = -1;
-        for( int j = 0; j < NUM_ITEM_SLOTS; j++ )
+        int worst_item_slot = -1;
+        for( int j = 0; j < config::NUM_ITEM_SLOTS; j++ )
         {
             if( processed_slots[j] )
             {
                 continue;
             }
-            if( ( worst_item_index == -1 ) ||
-               ( used_items[worst_item_index].tier > used_items[j].tier) )
+            if( ( worst_item_slot == -1 ) ||
+               ( used_items[worst_item_slot].tier > used_items[j].tier) )
             {
-                worst_item_index = j;
+                worst_item_slot = j;
             }
         }
-        if(worst_item_index != -1)
+        if(worst_item_slot != -1)
         {
-            if( used_items[worst_item_index].tier == NUM_ITEM_TIERS - 1 )
+            if( used_items[worst_item_slot].tier == config::NUM_ITEM_TIERS - 1 )
             {
                 //player is maxed out
                 return;
             }
             offer o;
-            if( sim.market.find_offer(worst_item_index, used_items[worst_item_index].tier + 1, account, o) )
+            if( sim.market.find_offer(worst_item_slot, used_items[worst_item_slot].tier + 1, account, o) )
             {
                 sim.market.bid(o, player_id, o.minimum_bid() );
             }
-            processed_slots[worst_item_index] = true;
+            processed_slots[worst_item_slot] = true;
         }
     }
 }
